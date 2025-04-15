@@ -1,0 +1,30 @@
+name: Deploy Gallery Website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'gallery-data.json'
+      - 'index.html'
+      - 'admin.html'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages  # 部署到的分支
+          folder: .  # 部署文件所在文件夹
+          clean: true  # 删除旧文件
