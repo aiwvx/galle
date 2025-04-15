@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片画廊 - 后台管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        h1 {
+            color: #333;
+            font-size: 2rem;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        .btn {
+            background-color: #4a89dc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #3b7dd8;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .image-preview {
+            margin-top: 10px;
+            max-width: 300px;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid #4a89dc;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f8f8;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>图片画廊后台管理</h1>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="add">添加新项目</div>
+            <div class="tab" data-tab="manage">管理现有项目</div>
+        </div>
+        
+        <div id="message-container"></div>
+        
+        <div class="tab-content active" id="add-tab">
+            <form id="add-item-form">
+                <div class="form-group">
+                    <label for="title">标题</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="link">链接网址</label>
+                    <input type="url" id="link" name="link" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image-source">图片来源</label>
+                    <select id="image-source" name="image-source">
+                        <option value="url">网络图片</option>
+                        <option value="file">本地文件</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="image-url-group">
+                    <label for="image-url">图片网址</label>
+                    <input type="url" id="image-url" name="image-url">
+                </div>
+                
+                <div class="form-group" id="image-file-group" style="display:none;">
+                    <label for="image-file">本地图片文件</label>
+                    <input type="file" id="image-file" name="image-file" accept="image/*">
+                </div>
+                
+                <div class="form-group">
+                    <img id="image-preview" class="image-preview" alt="图片预览">
+                </div>
+                
+                <button type="submit" class="btn">添加项目</button>
+            </form>
+        </div>
+        
+        <div class="tab-content" id="manage-tab">
+            <table id="items-table">
+                <thead>
+                    <tr>
+                        <th>标题</th>
+                        <th>图片</th>
+                        <th>链接</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 项目将通过 JavaScript 动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 标签切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                
+                if (tab.dataset.tab === 'manage') {
+                    loadItems();
+                }
+            });
+        });
+        
+        // 图片源切换
+        document.getElementById('image-source').addEventListener('change', function() {
+            const urlGroup = document.getElementById('image-url-group');
+            const fileGroup = document.getElementById('image-file-group');
+            
+            if (this.value === 'url') {
+                urlGroup.style.display = 'block';
+                fileGroup.style.display = 'none';
+            } else {
+                urlGroup.style.display = 'none';
+                fileGroup.style.display = 'block';
+            }
+        });
+        
+        // 图片预览功能
+        document.getElementById('image-url').addEventListener('blur', function() {
+            const preview = document.getElementById('image-preview');
+            if (this.value) {
+                preview.src = this.value;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('image-file').addEventListener('change', function() {
+            const preview = document.getElementById('image-preview');
+            const file = this.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        // 表单提交
+        document.getElementById('add-item-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取表单数据
+            const title = document.getElementById('title').value;
+            const link = document.getElementById('link').value;
+            const imageSource = document.getElementById('image-source').value;
+            
+            let imageUrl;
+            if (imageSource === 'url') {
+                imageUrl = document.getElementById('image-url').value;
+            } else {
+                // 使用FileReader获取图片的base64编码
+                const fileInput = document.getElementById('image-file');
+                if (fileInput.files.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        saveItem(title, link, e.target.result);
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                    return; // 异步处理，这里提前返回
+                } else {
+                    showMessage('请选择图片文件', 'error');
+                    return;
+                }
+            }
+            
+            // 如果是网络图片，直接保存
+            if (imageSource === 'url') {
+                saveItem(title, link, imageUrl);
+            }
+        });
+        
+        // 保存项目
+        function saveItem(title, link, imageUrl) {
+            // 获取现有数据
+            let galleryData = JSON.parse(localStorage.getItem('galleryData')) || [];
+            
+            // 添加新项目
+            galleryData.push({
+                id: Date.now(), // 使用时间戳作为唯一ID
+                title: title,
+                link: link,
+                imageUrl: imageUrl
+            });
+            
+            // 保存到本地存储
+            localStorage.setItem('galleryData', JSON.stringify(galleryData));
+            
+            // 生成JSON文件并提供下载
+            generateJsonFile(galleryData);
+            
+            // 显示成功消息
+            showMessage('项目添加成功！数据已保存，请下载JSON文件并上传到GitHub存储库中。', 'success');
+            
+            // 重置表单
+            document.getElementById('add-item-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+        }
+        
+        // 生成并下载JSON文件
+        function generateJsonFile(data) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gallery-data.json';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 加载项目列表
+        function loadItems() {
+            const galleryData = JSON.parse(localStorage.getItem('galleryData')) || [];
+            const tableBody = document.querySelector('#items-table tbody');
+            tableBody.innerHTML = '';
+            
+            galleryData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.title}</td>
+                    <td><img src="${item.imageUrl}" alt="${item.title}" style="max-width: 100px; max-height: 60px;"></td>
+                    <td><a href="${item.link}" target="_blank">${item.link}</a></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-danger" data-id="${item.id}">删除</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 添加删除事件监听
+            document.querySelectorAll('.btn-danger').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.dataset.id);
+                    deleteItem(id);
+                });
+            });
+        }
+        
+        // 删除项目
+        function deleteItem(id) {
+            let galleryData = JSON.parse(localStorage.getItem('galleryData')) || [];
+            galleryData = galleryData.filter(item => item.id !== id);
+            localStorage.setItem('galleryData', JSON.stringify(galleryData));
+            
+            // 重新加载列表
+            loadItems();
+            
+            // 生成更新后的JSON文件
+            generateJsonFile(galleryData);
+            
+            showMessage('项目已删除，请下载更新后的JSON文件并上传到GitHub存储库中。', 'success');
+        }
+        
+        // 显示消息
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.innerHTML = '';
+            container.appendChild(message);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    container.removeChild(message);
+                }, 500);
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
